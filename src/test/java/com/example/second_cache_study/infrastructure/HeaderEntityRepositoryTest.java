@@ -1,5 +1,8 @@
 package com.example.second_cache_study.infrastructure;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,17 +10,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.persistence.Cache;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
 @Transactional
-@DataJpaTest
-@AutoConfigureDataJpa
+//@DataJpaTest
+//@AutoConfigureDataJpa
 class HeaderEntityRepositoryTest {
     @Autowired
     private HeaderEntityRepository headerEntityRepository;
@@ -28,7 +38,14 @@ class HeaderEntityRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
+    @PersistenceUnit
+    EntityManagerFactory entityManagerFactory;
+
     HeaderEntity headerEntity;
+
+    SessionFactory sessionFactory;
+
+    Statistics statistics;
 
     @BeforeEach
     void init() {
@@ -85,5 +102,49 @@ class HeaderEntityRepositoryTest {
 
         NodeEntity secondNode = firstNode.getNextNode();
         NodeEntity thirdNode = secondNode.getNextNode();
+    }
+
+    @Test
+    @DisplayName("2회 조회 시 추가 쿼리 테스트")
+    public void secondCacheTest() {
+        // given
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class).getCache().getSessionFactory();
+        Statistics statistics = sessionFactory.getStatistics();
+        statistics.setStatisticsEnabled(true);
+
+        // when
+        HeaderEntity header = headerEntityRepository.findById(headerEntity.getId()).get();
+        List<NodeEntity> nodes = header.getNodes();
+
+        NodeEntity firstNode = nodes.stream()
+                .filter(node -> node.getPrevNode() == null)
+                .findFirst()
+                .get();
+
+        NodeEntity secondNode = firstNode.getNextNode();
+        NodeEntity thirdNode = secondNode.getNextNode();
+
+        entityManager.detach(header);
+        entityManager.detach(firstNode);
+        entityManager.detach(secondNode);
+        entityManager.detach(thirdNode);
+
+        HeaderEntity header2 = headerEntityRepository.findById(headerEntity.getId()).get();
+        List<NodeEntity> nodes2 = header2.getNodes();
+
+        NodeEntity firstNode2 = nodes2.stream()
+                .filter(node -> node.getPrevNode() == null)
+                .findFirst()
+                .get();
+
+        NodeEntity secondNode2 = firstNode2.getNextNode();
+        NodeEntity thirdNode2 = secondNode2.getNextNode();
+
+        //then
+        long next = sessionFactory.getStatistics().getSecondLevelCacheHitCount();
+
+        System.out.println("second level cache hit count: " + statistics.getSecondLevelCacheHitCount());
+        System.out.println("second level cache miss count: " + statistics.getSecondLevelCacheMissCount());
+        System.out.println("second level cache put count: " + statistics.getSecondLevelCachePutCount());
     }
 }
