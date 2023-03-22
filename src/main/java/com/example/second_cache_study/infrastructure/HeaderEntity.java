@@ -6,9 +6,13 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hibernate.annotations.CacheConcurrencyStrategy.*;
+
 @Entity
 @Getter
 @Setter
+@Cacheable
+@org.hibernate.annotations.Cache(usage = READ_WRITE)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HeaderEntity {
@@ -17,6 +21,7 @@ public class HeaderEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany
+    @org.hibernate.annotations.Cache(usage = READ_WRITE)
+    @OneToMany(mappedBy = "header", cascade = CascadeType.PERSIST)
     private List<NodeEntity> nodes = new ArrayList<>();
 }
