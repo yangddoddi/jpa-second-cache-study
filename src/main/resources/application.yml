@@ -1,0 +1,34 @@
+
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+  port: 8080
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:h2:~/second-cache-db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    database: h2
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+#        default_batch_fetch_size: 500
+    open-in-view: false
+
+logging:
+  level:
+    org.springframework.web.client: debug
+    org.hibernate.sql: debug
+    org.hibernate.type: trace
