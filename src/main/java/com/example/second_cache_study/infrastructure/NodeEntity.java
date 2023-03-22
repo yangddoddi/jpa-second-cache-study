@@ -15,11 +15,11 @@ public class NodeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "prev_node_id")
     private NodeEntity prevNode;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "next_node_id")
     private NodeEntity nextNode;
 
